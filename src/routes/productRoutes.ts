@@ -1,8 +1,10 @@
 import express from 'express';
 import {getProducts} from "../queries/getProducts";
 import {createProductCommand} from "../commands/createProductCommand";
-import {productSchema} from "../schemas/product";
+import {productSchema, restockProductSchema} from "../schemas/product";
 import {ValidationError} from "joi";
+import {getSingleProductById} from "../queries/getSingleProductById";
+import {restockProductCommand} from "../commands/restockProductCommand";
 
 export const productRouter = express.Router();
 
@@ -29,6 +31,70 @@ productRouter.post('/', async (req, res) => {
             return;
         }
 
-        res.status(500).json({ error: `Failed to create product.` })
+        console.error(error)
+        res.status(500).json({ error: `Failed to create product. - ${JSON.stringify(error)}` })
+    }
+})
+
+productRouter.post('/:id/restock', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+
+    if(isNaN(id)) {
+        res.status(400).json({ error: `Invalid id ${req.params.id}` });
+        return;
+    }
+
+    const product = await getSingleProductById(id);
+
+    if (!product) {
+      res.status(404).json({ error: `Product with id ${id} not found.` });
+      return;
+    }
+
+    const value = req.body.value;
+    await restockProductSchema.validateAsync(req.body);
+
+    await restockProductCommand(value, product);
+
+    res.status(200).json("Product restocked successfully.");
+
+  } catch (error) {
+
+     if ((error as ValidationError).isJoi) {
+         const details = (error as ValidationError).details.map(item => item.message).join(', ');
+         res.status(400).json({ error: `Invalid data: ${details}` });
+         return;
+     }
+
+    console.error(error);
+    res.status(500).json({ error: `Failed to restock product. - ${JSON.stringify(error)}` });
+  }
+})
+
+productRouter.post('/:id/sell', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const product = await getSingleProductById(id);
+
+        if (!product) {
+            res.status(404).json({ error: `Product with id ${id} not found.` });
+            return;
+        }
+
+        // TODO: Validate value
+        const value = req.body.value;
+
+        // TODO: Use command to restock product
+        // TODO: Validate to make sure we have enough stock
+
+        res.status(200).json("Product restocked successfully.");
+
+    } catch (error) {
+
+        // TODO: Handle error (joi)
+
+        console.error(error);
+        res.status(500).json({ error: `Failed to restock product. - ${JSON.stringify(error)}` });
     }
 })
