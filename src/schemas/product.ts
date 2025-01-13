@@ -7,6 +7,6 @@ export const productSchema = Joi.object({
     stock: Joi.number().positive().required(),
 })
 
-export const restockProductSchema = Joi.object({
+export const stockProductSchema = Joi.object({
     value: Joi.number().positive().required(),
 })
