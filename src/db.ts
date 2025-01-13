@@ -5,8 +5,8 @@ type Data = {
     products: Products
 }
 
-const defaultData: Data = { products: [
-        { name: 'Apple', description: 'A fruit', price: 0.5, stock: 20 },
-]}
+const defaultData: Data = {
+    products: []
+}
 
 export const db = await JSONFilePreset<Data>('db.json', defaultData)
