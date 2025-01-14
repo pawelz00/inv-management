@@ -1,11 +1,11 @@
 import {db} from "../db";
 import {Order} from "../types/order";
 import {getProducts} from "../queries/getProducts";
+import {IResponse} from "../types/response";
 
-export async function placeOrder(data: Order): Promise<{status: number, message: string}> {
+export async function placeOrder(data: Order): Promise<IResponse> {
     const lastId = db.data.orders[db.data.orders.length - 1]?.id || 0;
     const products = await getProducts();
-    let message = '';
     let productsToPush: { productId: number; quantity: number; }[] = [];
 
     for (const product of data.products) {
@@ -15,11 +15,13 @@ export async function placeOrder(data: Order): Promise<{status: number, message:
             return { status: 404, message: `Product with id ${product.productId} not found.` };
         }
 
-        if (productToPush.stock < product.quantity) {
+        const productQuantity = Number(product.quantity)
+
+        if (productToPush.stock < productQuantity) {
             return { status: 400, message: `Product with id ${product.productId} has not enough stock.` };
         }
 
-        productToPush.stock -= product.quantity;
+        productToPush.stock -= productQuantity;
         productsToPush.push(product);
     }
 
@@ -29,5 +31,5 @@ export async function placeOrder(data: Order): Promise<{status: number, message:
         products: productsToPush
     });
 
-    return { status: 201, message: 'Order created' };
+    return { status: 201, message: 'Order created', data: data };
 }
